@@ -15,6 +15,35 @@
             background-size: cover;
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-weight: 800;
+            position: relative;
+        }
+
+        #mute-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #ffffff;
+            color: #ffffff;
+            font-size: 2rem;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s, transform 0.1s;
+            z-index: 1000;
+        }
+
+        #mute-btn:hover {
+            background: rgba(0, 0, 0, 0.9);
+        }
+
+        #mute-btn:active {
+            transform: scale(0.95);
         }
 
         #logo {
@@ -41,6 +70,8 @@
     </style>
 </head>
 <body>
+
+    <button id="mute-btn">🔊</button>
 
     <audio id="bg-music" src="background.mp3" loop></audio>
 
@@ -73,6 +104,7 @@
         updateTimer();
 
         const audio = document.getElementById("bg-music");
+        const muteBtn = document.getElementById("mute-btn");
         audio.volume = 0.4; 
 
         function startAudio() {
@@ -86,6 +118,22 @@
 
         document.addEventListener('click', startAudio);
         document.addEventListener('keydown', startAudio);
+
+        muteBtn.addEventListener('click', (e) => {
+            e.stopPropagation(); 
+            
+            if (audio.paused) {
+                startAudio();
+            }
+
+            if (audio.muted) {
+                audio.muted = false;
+                muteBtn.innerText = "🔊";
+            } else {
+                audio.muted = true;
+                muteBtn.innerText = "🔇";
+            }
+        });
     </script>
 </body>
 </html>
