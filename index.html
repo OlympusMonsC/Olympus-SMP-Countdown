@@ -21,16 +21,16 @@
 
         .yass-icon {
             position: absolute;
-            width: 80px;
+            width: 50px;
             cursor: pointer;
-            z-index: 1;
-            animation: flyUpAndSpin 4s linear forwards;
+            z-index: 10;
+            animation: flyUpAndSpin 5s linear forwards;
             pointer-events: auto;
         }
 
         @keyframes flyUpAndSpin {
             from { bottom: -100px; transform: rotate(0deg); }
-            to { bottom: 110vh; transform: rotate(360deg); }
+            to { bottom: 110vh; transform: rotate(720deg); }
         }
 
         #mute-btn {
@@ -50,19 +50,17 @@
             justify-content: center;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             transition: transform 0.1s;
-            z-index: 100;
+            z-index: 1000;
             outline: none;
         }
 
-        #mute-btn:active {
-            transform: scale(0.90);
-        }
+        #mute-btn:active { transform: scale(0.90); }
 
         #logo {
             width: 500px;
             margin-bottom: 30px;
             position: relative;
-            z-index: 50;
+            z-index: 100;
         }
 
         #countdown {
@@ -72,18 +70,15 @@
             letter-spacing: 2px;
             text-align: center;
             position: relative;
-            z-index: 50;
+            z-index: 100;
         }
     </style>
 </head>
 <body>
 
     <button id="mute-btn">🔊</button>
-
     <audio id="bg-music" src="background.mp3" loop></audio>
-
     <img id="logo" src="https://cdn.discordapp.com/attachments/1509799360643203132/1510244293883724016/logogogo.png?ex=6a1c1c1a&is=6a1aca9a&hm=ea89dcd5e2107ef42ccefa0fdea2d101a071daeebb548d6a7eb273695d4732cb&" alt="Olympus SMP Logo">
-
     <div id="countdown">Loading...</div>
 
     <script>
@@ -92,38 +87,28 @@
         function updateTimer() {
             const now = new Date().getTime();
             const distance = targetDate - now;
-
             const days = Math.floor(distance / (1000 * 60 * 60 * 24));
             const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            document.getElementById("countdown").innerHTML =
-                days + "d " + hours + "h " + minutes + "m " + seconds + "s";
-
-            if (distance < 0) {
-                document.getElementById("countdown").innerHTML = "SMP STARTED";
-            }
+            document.getElementById("countdown").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+            if (distance < 0) document.getElementById("countdown").innerHTML = "SMP STARTED";
         }
-
         setInterval(updateTimer, 1000);
         updateTimer();
 
         function createYassImage() {
-            const currentIcons = document.querySelectorAll('.yass-icon');
-            if (currentIcons.length < 3) {
+            if (document.querySelectorAll('.yass-icon').length < 3) {
                 const img = document.createElement('img');
                 img.src = "https://media.discordapp.net/attachments/1509799360643203132/1510332465431183540/yass.png";
                 img.className = 'yass-icon';
                 img.style.left = Math.random() * 90 + 'vw';
-                
                 img.addEventListener('click', () => img.remove());
                 img.addEventListener('animationend', () => img.remove());
-                
                 document.body.appendChild(img);
             }
         }
-
         setInterval(createYassImage, 2000);
 
         const audio = document.getElementById("bg-music");
@@ -134,28 +119,16 @@
             audio.play().then(() => {
                 document.removeEventListener('click', startAudio);
                 document.removeEventListener('keydown', startAudio);
-            }).catch(error => {
-                console.log("Playback prevented");
-            });
+            }).catch(e => console.log("Playback prevented"));
         }
-
         document.addEventListener('click', startAudio);
         document.addEventListener('keydown', startAudio);
 
         muteBtn.addEventListener('click', (e) => {
             e.stopPropagation(); 
-            
-            if (audio.paused) {
-                startAudio();
-            }
-
-            if (audio.muted) {
-                audio.muted = false;
-                muteBtn.innerText = "🔊";
-            } else {
-                audio.muted = true;
-                muteBtn.innerText = "🔇";
-            }
+            if (audio.paused) startAudio();
+            if (audio.muted) { audio.muted = false; muteBtn.innerText = "🔊"; }
+            else { audio.muted = true; muteBtn.innerText = "🔇"; }
         });
     </script>
 </body>
