@@ -23,8 +23,9 @@
             position: absolute;
             width: 80px;
             cursor: pointer;
-            z-index: 1000;
+            z-index: 1;
             animation: flyUpAndSpin 4s linear forwards;
+            pointer-events: auto;
         }
 
         @keyframes flyUpAndSpin {
@@ -49,7 +50,7 @@
             justify-content: center;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
             transition: transform 0.1s;
-            z-index: 99999;
+            z-index: 100;
             outline: none;
         }
 
@@ -60,6 +61,8 @@
         #logo {
             width: 500px;
             margin-bottom: 30px;
+            position: relative;
+            z-index: 50;
         }
 
         #countdown {
@@ -68,6 +71,8 @@
             text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.7);
             letter-spacing: 2px;
             text-align: center;
+            position: relative;
+            z-index: 50;
         }
     </style>
 </head>
@@ -105,15 +110,18 @@
         updateTimer();
 
         function createYassImage() {
-            const img = document.createElement('img');
-            img.src = "https://media.discordapp.net/attachments/1509799360643203132/1510332465431183540/yass.png";
-            img.className = 'yass-icon';
-            img.style.left = Math.random() * 90 + 'vw';
-            
-            img.addEventListener('click', () => img.remove());
-            img.addEventListener('animationend', () => img.remove());
-            
-            document.body.appendChild(img);
+            const currentIcons = document.querySelectorAll('.yass-icon');
+            if (currentIcons.length < 3) {
+                const img = document.createElement('img');
+                img.src = "https://media.discordapp.net/attachments/1509799360643203132/1510332465431183540/yass.png";
+                img.className = 'yass-icon';
+                img.style.left = Math.random() * 90 + 'vw';
+                
+                img.addEventListener('click', () => img.remove());
+                img.addEventListener('animationend', () => img.remove());
+                
+                document.body.appendChild(img);
+            }
         }
 
         setInterval(createYassImage, 2000);
