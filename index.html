@@ -22,6 +22,15 @@
             margin-bottom: 30px;
         }
 
+        #title {
+            font-size: 6rem;
+            color: #ffffff;
+            text-shadow: 4px 4px 8px rgba(0, 0, 0, 0.7);
+            letter-spacing: 2px;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
         #countdown {
             font-size: 6rem;
             color: #ffffff;
@@ -34,6 +43,8 @@
 <body>
 
     <img id="logo" src="https://cdn.discordapp.com/attachments/1509799360643203132/1510244293883724016/logogogo.png?ex=6a1c1c1a&is=6a1aca9a&hm=ea89dcd5e2107ef42ccefa0fdea2d101a071daeebb548d6a7eb273695d4732cb&" alt="Olympus SMP Logo">
+
+    <div id="title">OPTIMISTIC</div>
     <div id="countdown">Loading...</div>
 
     <script>
@@ -48,7 +59,7 @@
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            document.getElementById("countdown").innerHTML = 
+            document.getElementById("countdown").innerHTML =
                 days + "d " + hours + "h " + minutes + "m " + seconds + "s";
 
             if (distance < 0) {
