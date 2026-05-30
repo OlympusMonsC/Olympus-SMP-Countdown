@@ -113,6 +113,7 @@
             font-size: 0.85rem;
             text-transform: uppercase;
             letter-spacing: 1px;
+            margin-top: 5px;
         }
 
         #chat-container {
@@ -212,7 +213,10 @@
             <button id="auth-btn">Unlock Edit</button>
         </div>
         <div id="edit-panel">
-            <label for="time-picker">Set Target Time (EST/EDT):</label>
+            <label for="date-picker">Set Target Date:</label>
+            <input type="date" id="date-picker" value="2026-05-31">
+
+            <label for="time-picker">Set Target Time (EDT):</label>
             <select id="time-picker"></select>
         </div>
     </div>
@@ -232,7 +236,8 @@
         const HASHED_CODE = "d1fd4e1a34f0d97e170878452c754dfccf1ee79c26ebed779aeed43e49a71b60";
         const CLIENT_ID = '3AAVFkezS7eNYLJF'; 
         
-        let targetDate = new Date("2026-05-31T22:00:00-04:00").getTime(); 
+        let targetDateString = "2026-05-31T22:00:00-04:00";
+        let targetDate = new Date(targetDateString).getTime(); 
 
         async function sha256(message) {
             const msgBuffer = new TextEncoder().encode(message);                    
@@ -256,21 +261,21 @@
             }
         }
         setInterval(updateTimer, 1000);
-        updateTimer();
 
         const authPanel = document.getElementById("auth-panel");
         const editPanel = document.getElementById("edit-panel");
         const codeInput = document.getElementById("admin-code-input");
         const authBtn = document.getElementById("auth-btn");
+        const datePicker = document.getElementById("date-picker");
         const timePicker = document.getElementById("time-picker");
 
         function populateDropdown() {
             timePicker.innerHTML = "";
             for(let h = 0; h < 24; h++) {
                 let formattedHour = h.toString().padStart(2, '0');
-                let timeString = `${formattedHour}:00 EST`;
+                let timeString = `${formattedHour}:00 EDT`;
                 let opt = document.createElement("option");
-                opt.value = `2026-05-31T${formattedHour}:00:00-04:00`;
+                opt.value = `${formattedHour}:00:00-04:00`;
                 opt.innerText = timeString;
                 if(h === 22) opt.selected = true;
                 timePicker.appendChild(opt);
@@ -289,18 +294,24 @@
             }
         });
 
-        timePicker.addEventListener("change", (e) => {
-            const newTimeValue = e.target.value;
+        function handleAdminTimeChange() {
+            const chosenDate = datePicker.value; 
+            const chosenTimeOffset = timePicker.value; 
+            const fullIsoString = `${chosenDate}T${chosenTimeOffset}`;
+
             if (room) {
                 drone.publish({
-                    room: 'olympus-room',
+                    room: 'observable-olympus-room',
                     message: {
                         type: 'TIME_UPDATE',
-                        newTime: newTimeValue
+                        newTime: fullIsoString
                     }
                 });
             }
-        });
+        }
+
+        datePicker.addEventListener("change", handleAdminTimeChange);
+        timePicker.addEventListener("change", handleAdminTimeChange);
 
         const chatForm = document.getElementById("chat-form");
         const chatInput = document.getElementById("chat-input");
@@ -315,7 +326,10 @@
 
         drone.on('open', error => {
             if (error) return console.error(error);
-            room = drone.subscribe('olympus-room');
+            
+            room = drone.subscribe('observable-olympus-room', {
+                historyCount: 0
+            });
             
             room.on('open', error => {
                 if (!error) {
@@ -323,9 +337,29 @@
                 }
             });
 
+            room.on('history_message', message => {
+                if (message.data && message.data.type === 'TIME_UPDATE') {
+                    targetDateString = message.data.newTime;
+                    targetDate = new Date(targetDateString).getTime();
+                    
+                    const datePart = targetDateString.split('T')[0];
+                    const timePart = targetDateString.split('T')[1];
+                    datePicker.value = datePart;
+                    
+                    for (let i = 0; i < timePicker.options.length; i++) {
+                        if (timePicker.options[i].value === timePart) {
+                            timePicker.options[i].selected = true;
+                            break;
+                        }
+                    }
+                    updateTimer();
+                }
+            });
+
             room.on('data', (data, client) => {
                 if (data.type === 'TIME_UPDATE') {
-                    targetDate = new Date(data.newTime).getTime();
+                    targetDateString = data.newTime;
+                    targetDate = new Date(targetDateString).getTime();
                     updateTimer();
                     appendMessage("System", "The countdown target has been updated live!", "#ff8787");
                 } else {
@@ -342,7 +376,7 @@
             if(!messageText || !room) return;
 
             drone.publish({
-                room: 'olympus-room',
+                room: 'observable-olympus-room',
                 message: {
                     name: myUsername,
                     color: myColor,
