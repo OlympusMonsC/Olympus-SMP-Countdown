@@ -212,7 +212,7 @@
             <button id="auth-btn">Unlock Edit</button>
         </div>
         <div id="edit-panel">
-            <label for="time-picker">Set Target Time (EST):</label>
+            <label for="time-picker">Set Target Time (EST/EDT):</label>
             <select id="time-picker"></select>
         </div>
     </div>
@@ -232,7 +232,7 @@
         const HASHED_CODE = "d1fd4e1a34f0d97e170878452c754dfccf1ee79c26ebed779aeed43e49a71b60";
         const CLIENT_ID = '3AAVFkezS7eNYLJF'; 
         
-        let targetDate = new Date("2026-05-31T22:00:00-05:00").getTime(); 
+        let targetDate = new Date("2026-05-31T22:00:00-04:00").getTime(); 
 
         async function sha256(message) {
             const msgBuffer = new TextEncoder().encode(message);                    
@@ -270,7 +270,7 @@
                 let formattedHour = h.toString().padStart(2, '0');
                 let timeString = `${formattedHour}:00 EST`;
                 let opt = document.createElement("option");
-                opt.value = `2026-05-31T${formattedHour}:00:00-05:00`;
+                opt.value = `2026-05-31T${formattedHour}:00:00-04:00`;
                 opt.innerText = timeString;
                 if(h === 22) opt.selected = true;
                 timePicker.appendChild(opt);
@@ -290,8 +290,16 @@
         });
 
         timePicker.addEventListener("change", (e) => {
-            targetDate = new Date(e.target.value).getTime();
-            updateTimer();
+            const newTimeValue = e.target.value;
+            if (room) {
+                drone.publish({
+                    room: 'olympus-room',
+                    message: {
+                        type: 'TIME_UPDATE',
+                        newTime: newTimeValue
+                    }
+                });
+            }
         });
 
         const chatForm = document.getElementById("chat-form");
@@ -316,9 +324,15 @@
             });
 
             room.on('data', (data, client) => {
-                const name = data.name || "Anonymous";
-                const color = data.color || "#ffffff";
-                appendMessage(name, data.message, color);
+                if (data.type === 'TIME_UPDATE') {
+                    targetDate = new Date(data.newTime).getTime();
+                    updateTimer();
+                    appendMessage("System", "The countdown target has been updated live!", "#ff8787");
+                } else {
+                    const name = data.name || "Anonymous";
+                    const color = data.color || "#ffffff";
+                    appendMessage(name, data.message, color);
+                }
             });
         });
 
