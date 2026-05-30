@@ -21,7 +21,7 @@
 
         .yass-icon {
             position: absolute;
-            width: 120px;
+            width: 250px; /* Made way bigger */
             cursor: pointer;
             z-index: 10;
             animation: flyUpAndSpin 5s linear forwards;
@@ -29,7 +29,7 @@
         }
 
         @keyframes flyUpAndSpin {
-            from { bottom: -200px; transform: rotate(0deg); }
+            from { bottom: -300px; transform: rotate(0deg); }
             to { bottom: 110vh; transform: rotate(720deg); }
         }
 
@@ -101,7 +101,7 @@
         function createYassImage() {
             if (document.querySelectorAll('.yass-icon').length < 3) {
                 const img = document.createElement('img');
-                img.src = "https://cdn.discordapp.com/attachments/1509799360643203132/1510332465431183540/yass.png";
+                img.src = "https://cdn.discordapp.com/attachments/1509799360643203132/1510332465431183540/yass.png?ex=6a1c6e38&is=6a1b1cb8&hm=c6c4b8cc8c1129be0fbbaa5ba8366dc3b6e9e2dacb05696b1bc3e73b66fd4616&";
                 img.className = 'yass-icon';
                 img.style.left = Math.random() * 80 + 5 + 'vw';
                 img.addEventListener('click', () => img.remove());
