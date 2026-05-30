@@ -16,6 +16,20 @@
             font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
             font-weight: 800;
             position: relative;
+            overflow: hidden;
+        }
+
+        .yass-icon {
+            position: absolute;
+            width: 80px;
+            cursor: pointer;
+            z-index: 1000;
+            animation: flyUpAndSpin 4s linear forwards;
+        }
+
+        @keyframes flyUpAndSpin {
+            from { bottom: -100px; transform: rotate(0deg); }
+            to { bottom: 110vh; transform: rotate(360deg); }
         }
 
         #mute-btn {
@@ -89,6 +103,20 @@
 
         setInterval(updateTimer, 1000);
         updateTimer();
+
+        function createYassImage() {
+            const img = document.createElement('img');
+            img.src = "https://media.discordapp.net/attachments/1509799360643203132/1510332465431183540/yass.png";
+            img.className = 'yass-icon';
+            img.style.left = Math.random() * 90 + 'vw';
+            
+            img.addEventListener('click', () => img.remove());
+            img.addEventListener('animationend', () => img.remove());
+            
+            document.body.appendChild(img);
+        }
+
+        setInterval(createYassImage, 2000);
 
         const audio = document.getElementById("bg-music");
         const muteBtn = document.getElementById("mute-btn");
