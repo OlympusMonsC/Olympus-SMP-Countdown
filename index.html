@@ -159,7 +159,6 @@
         }
 
         .chat-user {
-            color: #4dabf7;
             font-weight: bold;
         }
 
@@ -198,6 +197,7 @@
             background: #3793dd;
         }
     </style>
+    <script src='https://cdn.scaledrone.com/scaledrone.min.js'></script>
 </head>
 <body>
 
@@ -208,7 +208,7 @@
 
     <div id="admin-container">
         <div id="auth-panel">
-            <input type="text" id="admin-code-input" maxlength="5" placeholder="00000">
+            <input type="password" id="admin-code-input" maxlength="5" placeholder="00000">
             <button id="auth-btn">Unlock Edit</button>
         </div>
         <div id="edit-panel">
@@ -220,7 +220,7 @@
     <div id="chat-container">
         <div id="chat-header">Live Chat</div>
         <div id="chat-messages">
-            <div class="chat-msg"><span class="chat-user">System:</span> Welcome to the Olympus SMP Countdown chat!</div>
+            <div class="chat-msg"><span class="chat-user" style="color: #51cf66">System:</span> Connecting to live room...</div>
         </div>
         <form id="chat-form">
             <input type="text" id="chat-input" maxlength="100" placeholder="Send a message..." autocomplete="off" required>
@@ -229,8 +229,17 @@
     </div>
 
     <script>
-        const ADMIN_CODE = "12345";
+        const HASHED_CODE = "f153d88ffaeff892c6e4c74015fbcdeab66d499edff1ab298e0ab85f5431669e";
+        const CLIENT_ID = '3AAVFkezS7eNYLJF'; 
+        
         let targetDate = new Date("2026-05-31T22:00:00-05:00").getTime(); 
+
+        async function sha256(message) {
+            const msgBuffer = new TextEncoder().encode(message);                    
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
 
         function updateTimer() {
             const now = new Date().getTime();
@@ -263,16 +272,15 @@
                 let opt = document.createElement("option");
                 opt.value = `2026-05-31T${formattedHour}:00:00-05:00`;
                 opt.innerText = timeString;
-                
                 if(h === 22) opt.selected = true;
-                
                 timePicker.appendChild(opt);
             }
         }
         populateDropdown();
 
-        authBtn.addEventListener("click", () => {
-            if (codeInput.value === ADMIN_CODE) {
+        authBtn.addEventListener("click", async () => {
+            const inputHash = await sha256(codeInput.value);
+            if (inputHash === HASHED_CODE) {
                 authPanel.style.display = "none";
                 editPanel.style.display = "flex";
             } else {
@@ -289,22 +297,46 @@
         const chatForm = document.getElementById("chat-form");
         const chatInput = document.getElementById("chat-input");
         const chatMessages = document.getElementById("chat-messages");
-        const usernames = ["Zeus", "Poseidon", "Hades", "Athena", "Ares", "Apollo", "Artemis"];
+
+        const chatColors = ["#4dabf7", "#ffc078", "#ff8787", "#da77f2", "#94d82d", "#ffd43b", "#a9e34b"];
+        const myColor = chatColors[Math.floor(Math.random() * chatColors.length)];
+        const myUsername = "User_" + Math.floor(1000 + Math.random() * 9000);
+
+        const drone = new ScaleDrone(CLIENT_ID, {
+            data: { name: myUsername, color: myColor }
+        });
+
+        let room;
+
+        drone.on('open', error => {
+            if (error) return console.error(error);
+            room = drone.subscribe('observable-olympus-room');
+            
+            room.on('open', error => {
+                if (!error) {
+                    document.getElementById("chat-messages").innerHTML = `<div class="chat-msg"><span class="chat-user" style="color: #51cf66">System:</span> Connected to Live Chat!</div>`;
+                }
+            });
+
+            room.on('data', (message, client) => {
+                if (client) {
+                    appendMessage(client.authData.name, message, client.authData.color);
+                } else {
+                    appendMessage("Server", message, "#ced4da");
+                }
+            });
+        });
 
         chatForm.addEventListener("submit", (e) => {
             e.preventDefault();
             const messageText = chatInput.value.trim();
-            if(!messageText) return;
+            if(!messageText || !room) return;
 
-            appendMessage("You", messageText, "#ffcc00");
+            drone.publish({
+                room: 'observable-olympus-room',
+                message: messageText
+            });
             chatInput.value = "";
-
-            setTimeout(() => {
-                const randomUser = usernames[Math.floor(Math.random() * usernames.length)];
-                const responses = ["Hype!!", "Let's goooo!", "Is the server ready yet?", "Add me to the whitelist pls", "Can't wait!", "Olympus is going to be crazy"];
-                const randomReply = responses[Math.floor(Math.random() * responses.length)];
-                appendMessage(randomUser, randomReply, "#4dabf7");
-            }, 1500);
         });
 
         function appendMessage(user, text, color) {
@@ -324,11 +356,9 @@
                 const img = document.createElement('img');
                 const images = ["yass.png", "face.png"];
                 const randomImage = images[Math.floor(Math.random() * images.length)];
-                
                 img.src = randomImage; 
                 img.className = 'yass-icon';
                 img.style.left = Math.random() * 80 + 5 + 'vw';
-                
                 img.addEventListener('click', () => img.remove());
                 img.addEventListener('animationend', () => img.remove());
                 document.body.appendChild(img);
