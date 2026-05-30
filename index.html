@@ -100,11 +100,16 @@
         updateTimer();
 
         function createYassImage() {
-            if (document.querySelectorAll('.yass-icon').length < 3) {
+            if (document.querySelectorAll('.yass-icon').length < 5) {
                 const img = document.createElement('img');
-                img.src = "yass.png"; 
+                
+                const images = ["yass.png", "face.png"];
+                const randomImage = images[Math.floor(Math.random() * images.length)];
+                
+                img.src = randomImage; 
                 img.className = 'yass-icon';
                 img.style.left = Math.random() * 80 + 5 + 'vw';
+                
                 img.addEventListener('click', () => img.remove());
                 img.addEventListener('animationend', () => img.remove());
                 document.body.appendChild(img);
