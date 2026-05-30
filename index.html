@@ -74,48 +74,6 @@
             z-index: 100;
         }
 
-        #admin-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.6);
-            padding: 15px;
-            border-radius: 8px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            z-index: 1000;
-            color: white;
-            font-family: Arial, sans-serif;
-            font-weight: normal;
-        }
-
-        #admin-container input, #admin-container select, #admin-container button {
-            padding: 8px;
-            border-radius: 4px;
-            border: none;
-            margin-top: 5px;
-            font-weight: bold;
-        }
-
-        #admin-code-input {
-            width: 100px;
-            text-align: center;
-            letter-spacing: 3px;
-        }
-
-        #edit-panel {
-            display: none;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        #edit-panel label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-top: 5px;
-        }
-
         #chat-container {
             position: fixed;
             right: 20px;
@@ -207,20 +165,6 @@
     <img id="logo" src="logogogo.png" alt="Olympus SMP Logo">
     <div id="countdown">Loading...</div>
 
-    <div id="admin-container">
-        <div id="auth-panel">
-            <input type="password" id="admin-code-input" maxlength="5" placeholder="00000">
-            <button id="auth-btn">Unlock Edit</button>
-        </div>
-        <div id="edit-panel">
-            <label for="date-picker">Set Target Date:</label>
-            <input type="date" id="date-picker" value="2026-05-31">
-
-            <label for="time-picker">Set Target Time (EDT):</label>
-            <select id="time-picker"></select>
-        </div>
-    </div>
-
     <div id="chat-container">
         <div id="chat-header">Live Chat</div>
         <div id="chat-messages">
@@ -233,17 +177,21 @@
     </div>
 
     <script>
-        const HASHED_CODE = "d1fd4e1a34f0d97e170878452c754dfccf1ee79c26ebed779aeed43e49a71b60";
         const CLIENT_ID = '3AAVFkezS7eNYLJF'; 
-        
-        let targetDateString = "2026-05-31T22:00:00-04:00";
-        let targetDate = new Date(targetDateString).getTime(); 
+        const targetDate = new Date("2026-05-31T22:00:00-04:00").getTime(); 
 
-        async function sha256(message) {
-            const msgBuffer = new TextEncoder().encode(message);                    
-            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        const BANNED_WORDS = [
+            "fuck", "shit", "ass", "bitch", "cunt", "dick", "pussy", "nigger", "nigga", "faggot", 
+            "kike", "retard", "slut", "whore", "bastard", "kanker", "tyfus", "homo", "nazi", "hitler"
+        ];
+
+        function cleanMessage(text) {
+            let filteredText = text;
+            BANNED_WORDS.forEach(word => {
+                const regex = new RegExp(`\\b${word}\\b|${word}`, 'gi');
+                filteredText = filteredText.replace(regex, "****");
+            });
+            return filteredText;
         }
 
         function updateTimer() {
@@ -261,57 +209,7 @@
             }
         }
         setInterval(updateTimer, 1000);
-
-        const authPanel = document.getElementById("auth-panel");
-        const editPanel = document.getElementById("edit-panel");
-        const codeInput = document.getElementById("admin-code-input");
-        const authBtn = document.getElementById("auth-btn");
-        const datePicker = document.getElementById("date-picker");
-        const timePicker = document.getElementById("time-picker");
-
-        function populateDropdown() {
-            timePicker.innerHTML = "";
-            for(let h = 0; h < 24; h++) {
-                let formattedHour = h.toString().padStart(2, '0');
-                let timeString = `${formattedHour}:00 EDT`;
-                let opt = document.createElement("option");
-                opt.value = `${formattedHour}:00:00-04:00`;
-                opt.innerText = timeString;
-                if(h === 22) opt.selected = true;
-                timePicker.appendChild(opt);
-            }
-        }
-        populateDropdown();
-
-        authBtn.addEventListener("click", async () => {
-            const inputHash = await sha256(codeInput.value);
-            if (inputHash === HASHED_CODE) {
-                authPanel.style.display = "none";
-                editPanel.style.display = "flex";
-            } else {
-                alert("Incorrect Pin Code! Access Denied.");
-                codeInput.value = "";
-            }
-        });
-
-        function handleAdminTimeChange() {
-            const chosenDate = datePicker.value; 
-            const chosenTimeOffset = timePicker.value; 
-            const fullIsoString = `${chosenDate}T${chosenTimeOffset}`;
-
-            if (room) {
-                drone.publish({
-                    room: 'observable-olympus-room',
-                    message: {
-                        type: 'TIME_UPDATE',
-                        newTime: fullIsoString
-                    }
-                });
-            }
-        }
-
-        datePicker.addEventListener("change", handleAdminTimeChange);
-        timePicker.addEventListener("change", handleAdminTimeChange);
+        updateTimer();
 
         const chatForm = document.getElementById("chat-form");
         const chatInput = document.getElementById("chat-input");
@@ -326,10 +224,7 @@
 
         drone.on('open', error => {
             if (error) return console.error(error);
-            
-            room = drone.subscribe('observable-olympus-room', {
-                historyCount: 0
-            });
+            room = drone.subscribe('olympus-room');
             
             room.on('open', error => {
                 if (!error) {
@@ -337,36 +232,11 @@
                 }
             });
 
-            room.on('history_message', message => {
-                if (message.data && message.data.type === 'TIME_UPDATE') {
-                    targetDateString = message.data.newTime;
-                    targetDate = new Date(targetDateString).getTime();
-                    
-                    const datePart = targetDateString.split('T')[0];
-                    const timePart = targetDateString.split('T')[1];
-                    datePicker.value = datePart;
-                    
-                    for (let i = 0; i < timePicker.options.length; i++) {
-                        if (timePicker.options[i].value === timePart) {
-                            timePicker.options[i].selected = true;
-                            break;
-                        }
-                    }
-                    updateTimer();
-                }
-            });
-
             room.on('data', (data, client) => {
-                if (data.type === 'TIME_UPDATE') {
-                    targetDateString = data.newTime;
-                    targetDate = new Date(targetDateString).getTime();
-                    updateTimer();
-                    appendMessage("System", "The countdown target has been updated live!", "#ff8787");
-                } else {
-                    const name = data.name || "Anonymous";
-                    const color = data.color || "#ffffff";
-                    appendMessage(name, data.message, color);
-                }
+                const name = data.name || "Anonymous";
+                const color = data.color || "#ffffff";
+                const filteredMsg = cleanMessage(data.message);
+                appendMessage(name, filteredMsg, color);
             });
         });
 
@@ -376,7 +246,7 @@
             if(!messageText || !room) return;
 
             drone.publish({
-                room: 'observable-olympus-room',
+                room: 'olympus-room',
                 message: {
                     name: myUsername,
                     color: myColor,
@@ -402,7 +272,7 @@
             if (document.querySelectorAll('.yass-icon').length < 5) {
                 const img = document.createElement('img');
                 const images = ["yass.png", "face.png"];
-                const randomImage = images[Math.floor(Math.random() * images.length)];
+                const randomImage = images[images.length * Math.random() | 0];
                 img.src = randomImage; 
                 img.className = 'yass-icon';
                 img.style.left = Math.random() * 80 + 5 + 'vw';
