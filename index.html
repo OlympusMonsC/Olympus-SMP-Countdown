@@ -302,15 +302,12 @@
         const myColor = chatColors[Math.floor(Math.random() * chatColors.length)];
         const myUsername = "User_" + Math.floor(1000 + Math.random() * 9000);
 
-        const drone = new ScaleDrone(CLIENT_ID, {
-            data: { name: myUsername, color: myColor }
-        });
-
+        const drone = new ScaleDrone(CLIENT_ID);
         let room;
 
         drone.on('open', error => {
             if (error) return console.error(error);
-            room = drone.subscribe('observable-olympus-room');
+            room = drone.subscribe('olympus-room');
             
             room.on('open', error => {
                 if (!error) {
@@ -318,12 +315,10 @@
                 }
             });
 
-            room.on('data', (message, client) => {
-                if (client) {
-                    appendMessage(client.authData.name, message, client.authData.color);
-                } else {
-                    appendMessage("Server", message, "#ced4da");
-                }
+            room.on('data', (data, client) => {
+                const name = data.name || "Anonymous";
+                const color = data.color || "#ffffff";
+                appendMessage(name, data.message, color);
             });
         });
 
@@ -333,8 +328,12 @@
             if(!messageText || !room) return;
 
             drone.publish({
-                room: 'observable-olympus-room',
-                message: messageText
+                room: 'olympus-room',
+                message: {
+                    name: myUsername,
+                    color: myColor,
+                    message: messageText
+                }
             });
             chatInput.value = "";
         });
