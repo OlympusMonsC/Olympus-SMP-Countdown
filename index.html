@@ -73,6 +73,130 @@
             position: relative;
             z-index: 100;
         }
+
+        #admin-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px;
+            border-radius: 8px;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 1000;
+            color: white;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
+        }
+
+        #admin-container input, #admin-container select, #admin-container button {
+            padding: 8px;
+            border-radius: 4px;
+            border: none;
+            margin-top: 5px;
+            font-weight: bold;
+        }
+
+        #admin-code-input {
+            width: 100px;
+            text-align: center;
+            letter-spacing: 3px;
+        }
+
+        #edit-panel {
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        #edit-panel label {
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #chat-container {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            width: 320px;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.7);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            z-index: 1000;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            font-weight: normal;
+        }
+
+        #chat-header {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 12px;
+            font-weight: bold;
+            font-size: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #chat-messages {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .chat-msg {
+            word-break: break-word;
+            line-height: 1.4;
+        }
+
+        .chat-user {
+            color: #4dabf7;
+            font-weight: bold;
+        }
+
+        #chat-form {
+            display: flex;
+            padding: 10px;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        #chat-input {
+            flex: 1;
+            padding: 8px;
+            border-radius: 6px;
+            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            outline: none;
+        }
+
+        #chat-input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        #chat-submit {
+            background: #4dabf7;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #chat-submit:hover {
+            background: #3793dd;
+        }
     </style>
 </head>
 <body>
@@ -82,8 +206,31 @@
     <img id="logo" src="logogogo.png" alt="Olympus SMP Logo">
     <div id="countdown">Loading...</div>
 
+    <div id="admin-container">
+        <div id="auth-panel">
+            <input type="text" id="admin-code-input" maxlength="5" placeholder="00000">
+            <button id="auth-btn">Unlock Edit</button>
+        </div>
+        <div id="edit-panel">
+            <label for="time-picker">Set Target Time (EST):</label>
+            <select id="time-picker"></select>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-header">Live Chat</div>
+        <div id="chat-messages">
+            <div class="chat-msg"><span class="chat-user">System:</span> Welcome to the Olympus SMP Countdown chat!</div>
+        </div>
+        <form id="chat-form">
+            <input type="text" id="chat-input" maxlength="100" placeholder="Send a message..." autocomplete="off" required>
+            <button type="submit" id="chat-submit">Send</button>
+        </form>
+    </div>
+
     <script>
-        const targetDate = new Date("2026-05-31T22:00:00").getTime();
+        const ADMIN_CODE = "12345";
+        let targetDate = new Date("2026-05-31T22:00:00-05:00").getTime(); 
 
         function updateTimer() {
             const now = new Date().getTime();
@@ -93,16 +240,88 @@
             const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
             const seconds = Math.floor((distance % (1000 * 60)) / 1000);
 
-            document.getElementById("countdown").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s";
-            if (distance < 0) document.getElementById("countdown").innerHTML = "SMP STARTED";
+            if (distance < 0) {
+                document.getElementById("countdown").innerHTML = "SMP STARTED";
+            } else {
+                document.getElementById("countdown").innerHTML = days + "d " + hours + "h " + minutes + "m " + seconds + "s";
+            }
         }
         setInterval(updateTimer, 1000);
         updateTimer();
 
+        const authPanel = document.getElementById("auth-panel");
+        const editPanel = document.getElementById("edit-panel");
+        const codeInput = document.getElementById("admin-code-input");
+        const authBtn = document.getElementById("auth-btn");
+        const timePicker = document.getElementById("time-picker");
+
+        function populateDropdown() {
+            timePicker.innerHTML = "";
+            for(let h = 0; h < 24; h++) {
+                let formattedHour = h.toString().padStart(2, '0');
+                let timeString = `${formattedHour}:00 EST`;
+                let opt = document.createElement("option");
+                opt.value = `2026-05-31T${formattedHour}:00:00-05:00`;
+                opt.innerText = timeString;
+                
+                if(h === 22) opt.selected = true;
+                
+                timePicker.appendChild(opt);
+            }
+        }
+        populateDropdown();
+
+        authBtn.addEventListener("click", () => {
+            if (codeInput.value === ADMIN_CODE) {
+                authPanel.style.display = "none";
+                editPanel.style.display = "flex";
+            } else {
+                alert("Incorrect Pin Code! Access Denied.");
+                codeInput.value = "";
+            }
+        });
+
+        timePicker.addEventListener("change", (e) => {
+            targetDate = new Date(e.target.value).getTime();
+            updateTimer();
+        });
+
+        const chatForm = document.getElementById("chat-form");
+        const chatInput = document.getElementById("chat-input");
+        const chatMessages = document.getElementById("chat-messages");
+        const usernames = ["Zeus", "Poseidon", "Hades", "Athena", "Ares", "Apollo", "Artemis"];
+
+        chatForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+            const messageText = chatInput.value.trim();
+            if(!messageText) return;
+
+            appendMessage("You", messageText, "#ffcc00");
+            chatInput.value = "";
+
+            setTimeout(() => {
+                const randomUser = usernames[Math.floor(Math.random() * usernames.length)];
+                const responses = ["Hype!!", "Let's goooo!", "Is the server ready yet?", "Add me to the whitelist pls", "Can't wait!", "Olympus is going to be crazy"];
+                const randomReply = responses[Math.floor(Math.random() * responses.length)];
+                appendMessage(randomUser, randomReply, "#4dabf7");
+            }, 1500);
+        });
+
+        function appendMessage(user, text, color) {
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "chat-msg";
+            msgDiv.innerHTML = `<span class="chat-user" style="color: ${color}">${user}:</span> ${escapeHTML(text)}`;
+            chatMessages.appendChild(msgDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
         function createYassImage() {
             if (document.querySelectorAll('.yass-icon').length < 5) {
                 const img = document.createElement('img');
-                
                 const images = ["yass.png", "face.png"];
                 const randomImage = images[Math.floor(Math.random() * images.length)];
                 
